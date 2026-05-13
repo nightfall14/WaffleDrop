@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="WaffleDrop — Peer-to-peer file transfer. No servers store your data. No file size limits. End-to-end encrypted.">
+  <meta property="og:title" content="WaffleDrop — P2P File Transfer">
+  <meta property="og:description" content="Send files directly from your browser. No storage. No limits. Encrypted.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#080808">
+  <title>WaffleDrop — P2P File Transfer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23f5a623'/><text y='24' x='4' font-size='22'>🧇</text></svg>">
+</head>
+<body>
+
+<!-- Background -->
+<canvas id="bgCanvas"></canvas>
+<div class="bg-mesh"></div>
+
+<div class="app">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a href="/" class="logo">
+      <div class="logo-mark">🧇</div>
+      <span class="logo-text">WaffleDrop</span>
+    </a>
+    <div class="nav-right">
+      <div class="nav-stat">
+        <div class="stat-dot"></div>
+        <span id="serverStats">Signaling online</span>
+      </div>
+      <a href="https://github.com" class="nav-link" target="_blank">GitHub</a>
+      <a href="#how" class="nav-link">How it works</a>
+    </div>
+  </nav>
+
+  <main>
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-tag">
+        <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+        WebRTC · No storage · Open source
+      </div>
+      <h1>Drop it.<br><em>Send it.</em></h1>
+      <p>
+        Peer-to-peer file transfer straight from your browser.<br>
+        Files never touch a server — only the people you choose.
+      </p>
+      <div class="badge-row">
+        <span class="badge">🔒 End-to-end encrypted</span>
+        <span class="badge">⚡ No file size limit</span>
+        <span class="badge">🙈 Zero data stored</span>
+        <span class="badge">👤 No account needed</span>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('send')">↑&nbsp; Send Files</button>
+      <button class="tab-btn" onclick="switchTab('receive')">↓&nbsp; Receive Files</button>
+    </div>
+
+    <!-- ═══════════════════ SEND PANEL ═══════════════════ -->
+    <div class="panel" id="sendPanel">
+      <div class="card">
+
+        <!-- Drop Zone -->
+        <div class="drop-zone" id="dropZone">
+          <div class="upload-ring">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="drop-title">Drop your files here</div>
+          <div class="drop-sub">Any file type · Any size · Stays encrypted</div>
+          <span class="browse-link">or browse to select</span>
+        </div>
+        <input type="file" id="fileInput" multiple>
+
+        <!-- File count -->
+        <div class="file-count-bar hidden" id="fileCountBar">
+          <span id="fileCount"></span>
+          <span style="color:var(--muted);font-size:11px">drag to add more</span>
+        </div>
+
+        <!-- File list -->
+        <div class="file-list hidden" id="fileList"></div>
+
+        <!-- Share section (shown after room created) -->
+        <div class="share-section hidden" id="shareSection">
+          <div class="share-grid">
+            <!-- QR -->
+            <div class="qr-wrap" onclick="copyLink()" title="Click to copy link">
+              <canvas id="qrCanvas" width="100" height="100"></canvas>
+            </div>
+
+            <div class="share-right">
+              <div>
+                <div class="share-label">Room code</div>
+                <div class="code-display">
+                  <span class="code-value" id="shareCode">——</span>
+                  <button class="icon-btn" onclick="copyCode()" title="Copy code">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <div class="share-label">Share link</div>
+                <div class="link-row">
+                  <input class="link-input" id="shareLink" readonly>
+                  <button id="copyBtn" onclick="copyLink()">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-section hidden" id="statusSection">
+          <div class="status-dot waiting" id="statusDot"></div>
+          <span class="status-text" id="statusText">Waiting for receiver…</span>
+        </div>
+
+        <!-- Transfer progress -->
+        <div class="transfer-section hidden" id="transferSection">
+          <div class="progress-row">
+            <span id="progressLabel" style="font-size:12px;color:var(--text2)">Transferring…</span>
+            <span id="progressPct" style="font-size:12px;color:var(--accent)">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="speed-info" id="speedInfo"></div>
+        </div>
+
+        <!-- Done (sender) -->
+        <div class="done-state hidden" id="senderDone">
+          <div class="done-ring">✓</div>
+          <div class="done-title">Transfer Complete</div>
+          <div class="done-sub">All files were delivered successfully</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="card-footer">
+          <button class="btn btn-primary" id="generateBtn" onclick="startSharing()" disabled style="flex:1">
+            Generate Link
+          </button>
+          <button class="btn btn-ghost btn-sm hidden" id="resetBtn" onclick="resetSender()">
+            New Transfer
+          </button>
+        </div>
+
+      </div><!-- /card -->
+    </div><!-- /send panel -->
+
+    <!-- ═══════════════════ RECEIVE PANEL ═══════════════════ -->
+    <div class="panel hidden" id="receivePanel">
+      <div class="card">
+
+        <!-- Input form -->
+        <div id="receiverInput" class="receive-form">
+          <div>
+            <label class="form-label" for="receiveCode">Enter room code or paste link</label>
+            <input
+              class="receive-input"
+              id="receiveCode"
+              placeholder="e.g. A3F2B8C1"
+              maxlength="60"
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+            >
+          </div>
+          <button class="btn btn-primary btn-full" id="connectBtn" onclick="connectToSender()">
+            Connect &amp; Download
+          </button>
+          <p style="font-size:11px;color:var(--muted);text-align:center;line-height:1.6">
+            Files transfer directly P2P — nothing is stored on our servers.<br>
+            Keep this tab open throughout the transfer.
+          </p>
+        </div>
+
+        <!-- Incoming file info -->
+        <div class="incoming-section hidden" id="incomingSection">
+          <div class="incoming-card">
+            <div class="incoming-head">
+              <div class="incoming-file-icon" id="incomingIcon">📁</div>
+              <div style="flex:1;min-width:0">
+                <div class="incoming-title" id="incomingTitle">Connecting…</div>
+                <div class="incoming-meta" id="incomingMeta"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-section" style="border:none;padding:0 0 12px">
+            <div class="status-dot waiting" id="recvStatusDot"></div>
+            <span class="status-text" id="recvStatusText">Establishing connection…</span>
+          </div>
+        </div>
+
+        <!-- Recv progress -->
+        <div class="transfer-section hidden" id="recvProgressSection" style="border-top:1px solid var(--border)">
+          <div class="progress-row">
+            <span id="recvBytes" style="font-size:12px;color:var(--text2)">Waiting…</span>
+            <span id="recvPct" style="font-size:12px;color:var(--accent)">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="recvFill"></div>
+          </div>
+        </div>
+
+        <!-- Done (receiver) -->
+        <div class="done-state hidden" id="receiverDone">
+          <div class="done-ring">✓</div>
+          <div class="done-title">Files Saved!</div>
+          <div class="done-sub" id="receiverDoneSub">Download complete</div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="resetReceiver()">
+            Receive More Files
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FEATURES -->
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🔐</div>
+        <div class="feature-title">Encrypted</div>
+        <div class="feature-desc">DTLS 1.3 encryption built into WebRTC. Only you and your receiver can read the data.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🚫</div>
+        <div class="feature-title">No Storage</div>
+        <div class="feature-desc">Files stream directly between browsers. Close the tab and the transfer ends immediately.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">♾️</div>
+        <div class="feature-title">No Limits</div>
+        <div class="feature-desc">Send files of any size — videos, archives, disk images. Only your bandwidth applies.</div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="how-section" id="how">
+      <div class="section-title">How it works</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Drop your files</div>
+            <div class="step-desc">Select any files from your device. Nothing is uploaded yet — files stay local.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Share the code or link</div>
+            <div class="step-desc">A unique 8-character room code is generated. Send it to your receiver via any channel.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">P2P connection forms</div>
+            <div class="step-desc">Our FastAPI signaling server brokers a WebRTC handshake, then steps aside. Data flows peer-to-peer.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Files arrive instantly</div>
+            <div class="step-desc">The receiver's browser downloads directly from yours. No cloud, no waiting, no account.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>WaffleDrop &copy; 2025 — WebRTC P2P File Transfer</span>
+    <div class="footer-links">
+      <a href="/health">API Status</a>
+      <a href="https://github.com" target="_blank">GitHub</a>
+      <a href="#how">How it works</a>
+    </div>
+  </footer>
+
+</div><!-- /app -->
+
+<!-- TOASTS -->
+<div id="toastContainer"></div>
+
+<!-- Scripts -->
+<script src="/static/js/engine.js"></script>
+<script src="/static/js/app.js"></script>
+
+<script>
+// Fetch live server stats
+async function fetchStats() {
+  try {
+    const r = await fetch("/api/stats");
+    const d = await r.json();
+    const el = document.getElementById("serverStats");
+    if (el) {
+      el.textContent = `${d.active_transfers} active · ${d.waiting} waiting`;
+    }
+  } catch {}
+}
+fetchStats();
+setInterval(fetchStats, 15000);
+
+// Show file count bar when files are added (hook into renderFileList)
+const _origRender = window.renderFileList;
+</script>
+
+</body>
+</html>

@@ -224,4 +224,3 @@ Free TURN options: Metered.ca, Cloudflare Calls (TURN API), self-hosted coturn.
 ## License
 
 MIT — use freely, attribution appreciated.
-46f7702 (N: add ignore)

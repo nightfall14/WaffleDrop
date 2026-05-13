@@ -48,82 +48,26 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 # 4. Open http://localhost:8000
 ```
 
-### Docker (recommended)
+If you prefer VS Code Live Server for the frontend, run the backend on `http://localhost:8000` and open the Live Server URL with:
+
+- `?backend=http://localhost:8000`
+
+### Cloudflare tunnel (free)
+
+This is the easiest way to share your local app over HTTPS without paying for a VPS/domain setup.
 
 ```bash
-# Build & run
-docker compose up --build
+# With the server running on http://localhost:8000
 
-# Background
-docker compose up -d --build
+# Download cloudflared (Linux x86_64)
+curl -fsSL -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+chmod +x cloudflared
 
-# Logs
-docker compose logs -f
-
-# Stop
-docker compose down
+# Start a quick tunnel (keep this running)
+./cloudflared tunnel --url http://localhost:8000 --protocol http2
 ```
 
----
-
-## Deployment
-
-### Option A — Docker on any VPS (DigitalOcean, Linode, Hetzner)
-
-```bash
-# On your server
-git clone <your-repo> waffledrop
-cd waffledrop
-
-# Edit nginx.conf: replace yourdomain.com
-# Add SSL certs to ./certs/ (use certbot)
-# Uncomment the nginx service in docker-compose.yml
-
-docker compose up -d --build
-```
-
-### Option B — Railway / Render / Fly.io
-
-These platforms auto-detect the Dockerfile. Just push and deploy.
-
-**Railway:**
-```bash
-railway init
-railway up
-```
-
-**Render:** Connect GitHub repo → set `Dockerfile` as build method → deploy.
-
-**Fly.io:**
-```bash
-fly launch
-fly deploy
-```
-
-### Option C — Systemd service (bare metal)
-
-```ini
-# /etc/systemd/system/waffledrop.service
-[Unit]
-Description=WaffleDrop Signaling Server
-After=network.target
-
-[Service]
-WorkingDirectory=/opt/waffledrop/backend
-ExecStart=/usr/local/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
-Restart=always
-RestartSec=5
-User=www-data
-Environment=PYTHONUNBUFFERED=1
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-systemctl enable waffledrop
-systemctl start waffledrop
-```
+It will print a `https://...trycloudflare.com` URL — open that URL on both devices.
 
 ---
 
@@ -169,9 +113,6 @@ waffledrop/
 │       └── js/
 │           ├── engine.js    # WebRTC + WS engine
 │           └── app.js       # UI controller
-├── Dockerfile
-├── docker-compose.yml
-├── nginx.conf               # Production reverse proxy
 └── README.md
 ```
 
@@ -180,15 +121,15 @@ waffledrop/
 ## Technical Details
 
 - **Signaling**: FastAPI WebSocket, in-memory room registry, auto-cleanup after 2h or disconnect
-- **P2P**: RTCPeerConnection with STUN servers (Google + Cloudflare)
+- **P2P**: RTCPeerConnection with STUN + TURN fallback for strict NAT/firewall networks
 - **Transfer**: RTCDataChannel, ordered, 64 KB chunks with backpressure via `bufferedAmountLowThreshold`
 - **Encryption**: DTLS 1.3 (built into WebRTC spec, no configuration needed)
-- **No NAT traversal server (TURN)**: Pure STUN is used; for enterprise/strict-NAT environments, add a TURN server to `ICE_SERVERS` in `engine.js`
+- **TURN relay**: Configure `ICE_SERVERS` in `engine.js` if you need to force reliable connectivity (recommended to use your own TURN in production)
 
 ### Adding a TURN server
 
 ```js
-// In frontend/static/js/engine.js, add to ICE_SERVERS:
+// In frontend/static/js/engine.js, add/replace in ICE_SERVERS:
 {
   urls: "turn:your-turn-server.com:3478",
   username: "user",
@@ -217,7 +158,7 @@ Free TURN options: Metered.ca, Cloudflare Calls (TURN API), self-hosted coturn.
 - Room IDs are 8-char hex (4 billion combinations)
 - No files are ever written to disk on the server
 - WebSocket connections are authenticated only by knowing the room ID
-- For production, put behind nginx with HTTPS + rate limiting (config included)
+- For demos on restrictive networks, you may need TURN relay for WebRTC
 
 ---
 

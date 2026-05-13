@@ -10,6 +10,27 @@ const WD = (() => {
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun.cloudflare.com:3478" },
+    { urls: "stun:stun.relay.metered.ca:80" },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ];
 
   // ── State ───────────────────────────────────────────────────────────────────
@@ -36,13 +57,37 @@ const WD = (() => {
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
+  const DEFAULT_BACKEND_ORIGIN = `${location.protocol}//${location.host}`;
+
+  const BACKEND_ORIGIN = (() => {
+    const raw =
+      (typeof window !== "undefined" && window.WD_BACKEND) ||
+      new URLSearchParams(location.search).get("backend");
+
+    if (!raw) return DEFAULT_BACKEND_ORIGIN;
+
+    const trimmed = String(raw).trim().replace(/\/+$/, "");
+    if (!trimmed) return DEFAULT_BACKEND_ORIGIN;
+
+    const withProto = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)
+      ? trimmed
+      : `http://${trimmed}`;
+
+    try {
+      return new URL(withProto).origin;
+    } catch {
+      return DEFAULT_BACKEND_ORIGIN;
+    }
+  })();
+
   function wsUrl(path) {
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    return `${proto}://${location.host}${path}`;
+    const u = new URL(BACKEND_ORIGIN);
+    const proto = u.protocol === "https:" ? "wss" : "ws";
+    return `${proto}://${u.host}${path}`;
   }
 
   function apiUrl(path) {
-    return path;
+    return `${BACKEND_ORIGIN}${path}`;
   }
 
   function formatBytes(b) {

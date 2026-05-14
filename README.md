@@ -40,7 +40,7 @@ cd waffledrop
 
 # 2. Install Python deps
 pip install -r backend/requirements.txt
-
+./cloudflared tunnel --url http://127.0.0.1:8000 --protocol http2
 # 3. Run the server
 cd backend
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -57,7 +57,7 @@ If you prefer VS Code Live Server for the frontend, run the backend on `http://l
 This is the easiest way to share your local app over HTTPS without paying for a VPS/domain setup.
 
 ```bash
-# With the server running on http://localhost:8000
+# With the server running on http://127.0.0.1:8000
 
 # Download cloudflared (Linux x86_64)
 curl -fsSL -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64

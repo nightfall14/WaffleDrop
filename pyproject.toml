@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "waffledrop"
+version = "0.1.0"
+description = "Browser-based peer-to-peer file sharing app (FastAPI signaling + WebRTC)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi==0.115.5",
+  "uvicorn[standard]==0.32.1",
+  "websockets==13.1",
+  "python-multipart==0.0.17",
+  "pydantic==2.10.3",
+]
+
+[project.scripts]
+waffledrop = "backend.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["backend*"]

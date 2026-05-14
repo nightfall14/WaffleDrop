@@ -17,7 +17,7 @@
   --blue:     #60a5fa;
   --text:     #f2ede4;
   --text2:    #9a9189;
-  --muted:    #5a5550;
+  --muted:    #b3b0ae;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -143,6 +143,7 @@ body {
   text-decoration: none;
   transition: color 0.2s;
   letter-spacing: 0.05em;
+  margin-left: 10px;
 }
 .nav-link:hover { color: var(--text); }
 

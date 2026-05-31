@@ -31,8 +31,7 @@ function checkURLRoom() {
 
 // ── Engine events ─────────────────────────────────────────────────────────────
 function initEngine() {
-  WD
-    .on("ws_open", () => {})
+  WD.on("ws_open", () => {})
     .on("ws_close", () => {
       if (activeTab === "receive")
         setRecvStatus("error", "Disconnected from server");
@@ -56,7 +55,8 @@ function initEngine() {
     })
     .on("connection_state", (state) => {
       if (state === "connected") setStatus("connected", "P2P established");
-      if (state === "failed") setStatus("error", "P2P connection failed — check firewall/NAT");
+      if (state === "failed")
+        setStatus("error", "P2P connection failed — check firewall/NAT");
     })
     .on("channel_open", () => {
       if (activeTab === "send") {
@@ -74,7 +74,8 @@ function initEngine() {
       const p = Math.round(pct * 100);
       $("progressFill").style.width = p + "%";
       $("progressPct").textContent = p + "%";
-      $("progressLabel").textContent = `${formatBytes(sent)} / ${formatBytes(total)}`;
+      $("progressLabel").textContent =
+        `${formatBytes(sent)} / ${formatBytes(total)}`;
       if (speed > 0) $("speedInfo").textContent = formatBytes(speed) + "/s";
     })
     .on("recv_meta", (meta) => {
@@ -85,7 +86,8 @@ function initEngine() {
       const p = Math.round(pct * 100);
       $("recvFill").style.width = p + "%";
       $("recvPct").textContent = p + "%";
-      $("recvBytes").textContent = `${formatBytes(recv)} / ${formatBytes(total)}`;
+      $("recvBytes").textContent =
+        `${formatBytes(recv)} / ${formatBytes(total)}`;
     })
     .on("send_done", () => {
       showSenderDone();
@@ -117,9 +119,15 @@ function initDropZone() {
   const fi = $("fileInput");
 
   dz.addEventListener("click", () => fi.click());
-  fi.addEventListener("change", (e) => { addFiles([...e.target.files]); fi.value = ""; });
+  fi.addEventListener("change", (e) => {
+    addFiles([...e.target.files]);
+    fi.value = "";
+  });
 
-  dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drag-over"); });
+  dz.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dz.classList.add("drag-over");
+  });
   dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
   dz.addEventListener("drop", (e) => {
     e.preventDefault();
@@ -129,8 +137,8 @@ function initDropZone() {
 }
 
 function addFiles(newFiles) {
-  newFiles.forEach(f => {
-    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size))
+  newFiles.forEach((f) => {
+    if (!selectedFiles.find((x) => x.name === f.name && x.size === f.size))
       selectedFiles.push(f);
   });
   renderFileList();
@@ -154,9 +162,12 @@ function renderFileList() {
   }
 
   list.classList.remove("hidden");
-  $("fileCount").textContent = `${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""} · ${WD.formatBytes(totalSize)}`;
+  $("fileCount").textContent =
+    `${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""} · ${WD.formatBytes(totalSize)}`;
 
-  list.innerHTML = selectedFiles.map((f, i) => `
+  list.innerHTML = selectedFiles
+    .map(
+      (f, i) => `
     <div class="file-item" style="animation-delay:${i * 0.05}s">
       <div class="file-icon">${WD.fileEmoji(f.name)}</div>
       <div class="file-info">
@@ -169,8 +180,9 @@ function renderFileList() {
         </svg>
       </button>
     </div>
-  `).join("");
-
+  `,
+    )
+    .join("");
   btn.disabled = false;
 }
 
@@ -210,6 +222,10 @@ function showSenderDone() {
   $("senderDone").classList.remove("hidden");
   $("statusDot").className = "status-dot done";
   $("statusText").textContent = "All files transferred successfully!";
+  setTimeout(() => {
+    generateBtn.textContent = "Send more files";
+    generateBtn.disabled = false;
+  }, 2000);
 }
 
 function resetSender() {
@@ -234,7 +250,10 @@ async function connectToSender() {
   let code = $("receiveCode").value.trim().toUpperCase();
   // strip if full URL pasted
   const hashMatch = code.match(/[A-F0-9]{8}/i);
-  if (!hashMatch) { showToast("Invalid room code — expected 8 character code", "error"); return; }
+  if (!hashMatch) {
+    showToast("Invalid room code — expected 8 character code", "error");
+    return;
+  }
   code = hashMatch[0].toUpperCase();
 
   const btn = $("connectBtn");
@@ -243,9 +262,18 @@ async function connectToSender() {
 
   try {
     const info = await WD.getRoomInfo(code);
-    if (!info) { showToast("Room not found or expired", "error"); btn.disabled = false; btn.textContent = "Connect & Download"; return; }
-    if (!info.has_sender) { showToast("Sender is not online — ask them to share again", "error"); btn.disabled = false; btn.textContent = "Connect & Download"; return; }
-
+    if (!info) {
+      showToast("Room not found or expired", "error");
+      btn.disabled = false;
+      btn.textContent = "Connect & Download";
+      return;
+    }
+    if (!info.has_sender) {
+      showToast("Sender is not online — ask them to share again", "error");
+      btn.disabled = false;
+      btn.textContent = "Connect & Download";
+      return;
+    }
     $("receiverInput").classList.add("hidden");
     $("incomingSection").classList.remove("hidden");
 
@@ -264,22 +292,22 @@ function showIncomingInfo(meta) {
   if (!meta || !meta.files) return;
   const files = meta.files;
   const totalSize = meta.total || files.reduce((s, f) => s + f.size, 0);
-
-  $("incomingIcon").textContent = files.length === 1 ? WD.fileEmoji(files[0].name) : "📦";
-  $("incomingTitle").textContent = files.length === 1
-    ? files[0].name
-    : `${files.length} files`;
-  $("incomingMeta").textContent = WD.formatBytes(totalSize) + (files.length > 1
-    ? ` — ${files.map(f => f.name).join(", ")}`
-    : "");
+  $("incomingIcon").textContent =
+    files.length === 1 ? WD.fileEmoji(files[0].name) : "📦";
+  $("incomingTitle").textContent =
+    files.length === 1 ? files[0].name : `${files.length} files`;
+  $("incomingMeta").textContent =
+    WD.formatBytes(totalSize) +
+    (files.length > 1 ? ` — ${files.map((f) => f.name).join(", ")}` : "");
 }
 
 function showReceiverDone(fileMeta) {
   $("incomingSection").classList.add("hidden");
   $("recvProgressSection").classList.add("hidden");
   $("receiverDone").classList.remove("hidden");
-  const names = fileMeta.map(f => f.name).join(", ");
-  $("receiverDoneSub").textContent = `${fileMeta.length} file(s) saved to your Downloads`;
+  const names = fileMeta.map((f) => f.name).join(", ");
+  $("receiverDoneSub").textContent =
+    `${fileMeta.length} file(s) saved to your Downloads`;
   setRecvStatus("done", "Transfer complete!");
   showToast(`${fileMeta.length} file(s) downloaded successfully`, "success");
 }
@@ -300,7 +328,9 @@ function resetReceiver() {
 // ── Status helpers ─────────────────────────────────────────────────────────────
 function setStatus(state, text) {
   const dot = $("statusDot");
-  if (dot) { dot.className = "status-dot " + state; }
+  if (dot) {
+    dot.className = "status-dot " + state;
+  }
   const el = $("statusText");
   if (el) el.textContent = text;
 }
@@ -320,13 +350,18 @@ function copyLink() {
     btn.textContent = "Copied!";
     btn.classList.add("copied");
     showToast("Link copied to clipboard", "success");
-    setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2500);
+    setTimeout(() => {
+      btn.textContent = "Copy";
+      btn.classList.remove("copied");
+    }, 2500);
   });
 }
 
 function copyCode() {
   const code = $("shareCode").textContent;
-  navigator.clipboard.writeText(code).then(() => showToast(`Code ${code} copied!`, "success"));
+  navigator.clipboard
+    .writeText(code)
+    .then(() => showToast(`Code ${code} copied!`, "success"));
 }
 
 function generateQR(url) {
@@ -352,7 +387,8 @@ function fallbackQR(canvas, text) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#f5a623";
   const seed = text.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const g = 10, cell = canvas.width / g;
+  const g = 10,
+    cell = canvas.width / g;
   for (let r = 0; r < g; r++)
     for (let c = 0; c < g; c++)
       if ((seed * (r + 1) * (c + 1) * 7) % 3 !== 0)
@@ -381,7 +417,9 @@ function initParticles() {
   const canvas = $("bgCanvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  let W, H, dots = [];
+  let W,
+    H,
+    dots = [];
 
   function resize() {
     W = canvas.width = window.innerWidth;
@@ -403,7 +441,7 @@ function initParticles() {
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    dots.forEach(d => {
+    dots.forEach((d) => {
       d.x = (d.x + d.vx + W) % W;
       d.y = (d.y + d.vy + H) % H;
       ctx.beginPath();
@@ -418,5 +456,9 @@ function initParticles() {
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function escHtml(s) {
-  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

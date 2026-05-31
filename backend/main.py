@@ -7,16 +7,12 @@ Handles room creation, peer discovery, and SDP/ICE relay.
 import json
 import uuid
 import logging
-import asyncio
-from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, Optional
-
+from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
 
 # Resolve frontend path relative to this file's parent (project root)
 BASE_DIR = Path(__file__).parent.parent
@@ -37,19 +33,37 @@ app.add_middleware(
 
 # ─── Data models ─────────────────────────────────────────────────────────────
 
+
 class Room:
     def __init__(self, room_id: str):
         self.room_id = room_id
-        self.created_at = datetime.utcnow()
-        self.sender: Optional[WebSocket] = None
-        self.receiver: Optional[WebSocket] = None
-        self.sender_id: Optional[str] = None
-        self.receiver_id: Optional[str] = None
-        self.file_meta: Optional[dict] = None  # stored for receiver to see before connecting
+        self.created_at = datetime.now()
+        self.sender: WebSocket | None = None
+        self.receiver: WebSocket | None = None
+        self.sender_id: str | None = None
+        self.receiver_id: str | None = None
+        self.file_meta: dict | None = (
+            None  # stored for receiver to see before connecting
+        )
         self.closed = False
 
     def is_expired(self) -> bool:
-        return datetime.utcnow() - self.created_at > timedelta(hours=2)
+        return datetime.now() - self.created_at > timedelta(hours=2)
+
+
+class Room:
+    def __init__(self, room_id: str):
+        self.room_id = room_id
+        self.created_at = datetime.now()
+        self.sender: WebSocket | None = None
+        self.receiver: WebSocket | None = None
+        self.sender_id: str | None = None
+        self.receiver_id: str | None = None
+        self.file_meta: dict | None = None
+        self.closed = False
+
+    def is_expired(self) -> bool:
+        return datetime.now() - self.created_at > timedelta(hours=2)
 
     def peer_count(self) -> int:
         return sum(1 for ws in [self.sender, self.receiver] if ws is not None)
@@ -57,7 +71,8 @@ class Room:
 
 # ─── Room Registry ────────────────────────────────────────────────────────────
 
-rooms: Dict[str, Room] = {}
+rooms: dict[str, Room] = {}
+rooms: dict[str, Room] = {}
 
 
 def cleanup_rooms():
@@ -70,13 +85,14 @@ def cleanup_rooms():
 
 # ─── REST endpoints ───────────────────────────────────────────────────────────
 
+
 @app.get("/health")
 async def health():
     cleanup_rooms()
     return {
         "status": "ok",
         "active_rooms": len(rooms),
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
 
@@ -121,6 +137,7 @@ async def stats():
 
 # ─── WebSocket signaling ──────────────────────────────────────────────────────
 
+
 @app.websocket("/ws/{room_id}/{role}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, role: str):
     """
@@ -141,27 +158,42 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, role: str):
 
     if role == "sender":
         if room.sender is not None:
-            await websocket.send_json({"type": "error", "message": "Room already has a sender"})
+            await websocket.send_json(
+                {"type": "error", "message": "Room already has a sender"}
+            )
             await websocket.close(code=4001)
             return
         room.sender = websocket
         room.sender_id = peer_id
         logger.info(f"Sender joined room {room_id} (peer {peer_id})")
-        await websocket.send_json({"type": "joined", "role": "sender", "room_id": room_id, "peer_id": peer_id})
+        await websocket.send_json(
+            {"type": "joined", "role": "sender", "room_id": room_id, "peer_id": peer_id}
+        )
 
     elif role == "receiver":
         if room.sender is None:
-            await websocket.send_json({"type": "error", "message": "No sender in room yet"})
+            await websocket.send_json(
+                {"type": "error", "message": "No sender in room yet"}
+            )
             await websocket.close(code=4002)
             return
         if room.receiver is not None:
-            await websocket.send_json({"type": "error", "message": "Room already has a receiver"})
+            await websocket.send_json(
+                {"type": "error", "message": "Room already has a receiver"}
+            )
             await websocket.close(code=4003)
             return
         room.receiver = websocket
         room.receiver_id = peer_id
         logger.info(f"Receiver joined room {room_id} (peer {peer_id})")
-        await websocket.send_json({"type": "joined", "role": "receiver", "room_id": room_id, "peer_id": peer_id})
+        await websocket.send_json(
+            {
+                "type": "joined",
+                "role": "receiver",
+                "room_id": room_id,
+                "peer_id": peer_id,
+            }
+        )
 
         # Notify sender that receiver joined
         if room.sender:

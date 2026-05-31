@@ -8,28 +8,6 @@ A production-ready, browser-based peer-to-peer file sharing app built with **Fas
 
 Files are **never stored on the server** — the FastAPI backend only brokers the WebRTC handshake, then gets out of the way. All data flows directly browser-to-browser, encrypted with DTLS 1.3.
 
-
-
-## Architecture
-
-```
-Sender Browser                  FastAPI Signaling              Receiver Browser
-──────────────                  ─────────────────              ────────────────
-1. POST /api/room          →    Create room (in-memory)
-2. WS  /ws/{id}/sender    →    Register as sender
-                                                    ←   3. GET /api/room/{id}
-                                                    ←   4. WS /ws/{id}/receiver
-                           ←   "receiver_joined"
-5. createOffer (SDP)       →    Relay offer         →
-                           ←   Relay answer         ←   6. createAnswer (SDP)
-7. ICE candidates          ⇄    Relay ICE           ⇄   7. ICE candidates
-─────────────────────────────── WebRTC P2P established ──────────────────────
-8. RTCDataChannel          ══════════ Direct P2P ══════════   9. Save to disk
-   (chunked, any size)             (no server involved)
-```
-
-
-
 ## Quick Start
 
 ### Local development

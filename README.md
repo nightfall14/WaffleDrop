@@ -14,6 +14,7 @@ Files are **never stored on the server** — the FastAPI backend only brokers th
 
 ```bash
 # 1. Clone / enter project
+git clone https://github.com/nightfall14/WaffleDrop ~/waffledrop
 cd waffledrop
 
 # 2. Install Python deps

@@ -81,7 +81,7 @@ It will print a `https://...trycloudflare.com` URL — open that URL on both dev
 ## Project Structure
 
 ```
-waffledrop/
+TimeVault/
 ├── backend/
 │   ├── main.py              # FastAPI app + signaling server
 │   └── requirements.txt
